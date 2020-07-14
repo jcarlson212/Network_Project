@@ -4,12 +4,24 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 
-from .models import User
-
+from .models import Post, User
 
 def index(request):
     return render(request, "network/index.html")
 
+def post(request):
+    if request.method == "POST":
+        username = request.user.username
+        postText = request.POST["postText"]
+        user = User.objects.filter(username=username)[0]
+
+        post = Post(user=user, postText=postText)
+        post.save()
+        print(Post.objects.all())
+
+        return HttpResponseRedirect(reverse('index'))
+    else:
+        return HttpResponse("No such page")
 
 def login_view(request):
     if request.method == "POST":

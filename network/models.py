@@ -3,4 +3,11 @@ from django.db import models
 
 
 class User(AbstractUser):
-    pass
+    username = models.CharField(max_length=30, unique=True)
+
+class Post(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    postText = models.CharField(max_length=100)
+    date = models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        return self.postText;
