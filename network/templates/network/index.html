@@ -1,5 +1,85 @@
 {% extends "network/layout.html" %}
 
+{% block scripts %}
+    <script>
+
+        const createPostElement = (username, likes, postText, date) => {
+            console.log(date, likes)
+            const postDiv = document.createElement('div');
+            postDiv.className = "post";
+
+            const postBodyDiv = document.createElement('div');
+            postBodyDiv.className = "post-body";
+            postBodyDiv.innerHTML = postText
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "row";
+            rowDiv.style.height = "25%";
+
+            const colDate = document.createElement('div');
+            colDate.className = 'col';
+            const colUsername = document.createElement('div');
+            colUsername.className = 'col';
+            const colLikes = document.createElement('div');
+            colLikes.className = 'col';
+
+            const dateElement = document.createElement('div');
+            dateElement.className = 'post-date';
+            dateElement.innerHTML = `Posted on ${date}`;
+            colDate.append(dateElement);
+            rowDiv.append(colDate);
+
+            const usernameElement = document.createElement('div');
+            usernameElement.className = 'post-username';
+            usernameElement.innerHTML = 'Posted by ' + username;
+            colUsername.append(usernameElement);
+            rowDiv.append(colUsername);
+
+            const likesElement = document.createElement('div');
+            likesElement.className = 'post-username';
+            likesElement.innerHTML = `Likes: ${likes}`;
+            colLikes.append(likesElement);
+            rowDiv.append(colLikes);
+
+            postDiv.append(postBodyDiv);
+            postDiv.append(rowDiv);
+
+            return postDiv;
+        }
+
+        window.addEventListener('DOMContentLoaded', (event) => {
+            //const h = document.createElement('h1')
+
+            fetch("{% url 'getPosts' 0 9 %}", {
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                
+                for(const key in data.post_likes){
+                    post_like= data.post_likes[key]
+                    const post= post_like.post;
+                    console.log(post_like)
+                    console.log(post)
+                    const likes = post_like.likes;
+                    const username = post.username;
+                    const postText = post.postText;
+                    const date = post.date;
+                    const postElement = createPostElement(username, likes, postText, date);
+                    console.log(postElement)
+                    document.querySelector('#posts').append(postElement)
+                }
+            })
+            .catch(err => {
+                console.log(err)
+            })
+
+            //document.querySelector('#posts').append(h)
+        })
+    </script>
+{% endblock %}
+
 {% block body %}
     {% if user.is_authenticated %}
         <h2>New Post</h2>
@@ -12,6 +92,14 @@
         </form>
     {% endif %}
     
+    <div id="posts">
+
+    </div>
+
+    <h1>
+        END OF NEW POSTS
+    </h1>
+
     {% for post_like in post_likes %}
         <div class="post">
             <div class="post-body">

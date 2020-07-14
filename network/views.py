@@ -3,6 +3,7 @@ from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
+from django.http import JsonResponse
 
 from .models import Follow, Like, Post, User
 
@@ -14,6 +15,28 @@ def index(request):
     return render(request, "network/index.html", {
         "post_likes": post_likes
     })
+
+def getPosts(request, start, end):
+    if request.method == 'GET':
+        posts = sorted(Post.objects.all(), key= lambda post: post.date, reverse=True)
+        if end < len(posts):
+            posts = posts[start:end+1]
+        else:
+            posts = posts[start:len(posts)]
+        post_likes = []
+        for post in posts:
+            post_likes.append({ 
+                "post": {
+                    "username": post.user.username,
+                    "postText": post.postText,
+                    "date": str(post.date)
+                }, 
+                "likes": str(len(Like.objects.filter(post=post)))
+            })
+        print(post_likes)
+        return JsonResponse({ "post_likes": post_likes})
+    else:
+        return HttpResponse("wrong page")
 
 def post(request):
     if request.method == "POST":
@@ -56,6 +79,22 @@ def unfollow(request):
         return HttpResponse("Unfollow success")
     else:
         return HttpResponse("Not found...")
+
+def like(request):
+    if request.method == "PUT":
+        l = Like(userFrom=User.objects.filter(username=request.PUT["userFrom"])[0], userTo=User.objects.filter(username=request.PUT["userTo"])[0])
+        l.save()
+        return HttpResponse("Success")
+    else:
+        return HttpResponse("Not found")
+
+def unlike(request):
+    if request.method == "PUT":
+        l = Like.objects.get(userFrom=User.objects.filter(username=request.PUT["userFrom"])[0], userTo=User.objects.filter(username=request.PUT["userTo"])[0])
+        l.delete()
+        return HttpResponse("Success")
+    else:
+        return HttpResponse("Not found")
 
 def profile(request, username):
     user = User.objects.filter(username=username)[0]
