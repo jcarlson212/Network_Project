@@ -2,14 +2,23 @@
 
 {% block body %}
     {% if user.is_authenticated %}
-        <h2>New Post</h2>
-        <form method="POST" action="{% url 'post' %}">
-            {% csrf_token %}
-            <div class="form-group" style="height: 200px">
-                <textarea class="form-control" style="height: 100%; resize: none; width: 50%" name="postText" placeholder="Make a new post..."></textarea>
-            </div>
-            <input class="btn btn-primary" type="submit" value="Post">
-        </form>
+        {% if user.username != username %}
+            {% if isFollower %}
+                <form method="POST" action="{% url 'unfollow' %}">
+                    {% csrf_token %}
+                    <input type="hidden" value="{{currentUser.username}}" name="userFromName">
+                    <input type="hidden" value="{{username}}" name="userToName">
+                    <input class="btn btn-primary" type="submit" value="Unfollow">
+                </form>
+            {% else %}
+                <form method="POST" action="{% url 'follow' %}">
+                    {% csrf_token %}
+                    <input type="hidden" value="{{currentUser.username}}" name="userFromName">
+                    <input type="hidden" value="{{username}}" name="userToName">
+                    <input class="btn btn-primary" type="submit" value="Follow">
+                </form>
+            {% endif %}
+        {% endif %}
     {% endif %}
     
     {% for post_like in post_likes %}

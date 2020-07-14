@@ -4,13 +4,15 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 
-from .models import Post, User
+from .models import Follow, Like, Post, User
 
 def index(request):
     posts = sorted(Post.objects.all(), key= lambda post: post.date, reverse=True)
-    print(posts)
+    post_likes = []
+    for post in posts:
+        post_likes.append({ "post": post, "likes": len(Like.objects.filter(post=post))})
     return render(request, "network/index.html", {
-        "posts": posts
+        "post_likes": post_likes
     })
 
 def post(request):
@@ -26,6 +28,27 @@ def post(request):
         return HttpResponseRedirect(reverse('index'))
     else:
         return HttpResponse("No such page")
+
+def profile(request, username):
+    user = User.objects.filter(username=username)[0]
+    posts = Post.objects.filter(user=user)
+    post_likes = []
+    for post in posts:
+        post_likes.append({ "post": post, "likes": len(Like.objects.filter(post=post))})
+    currentUser = User.objects.filter(username=request.user.username)[0]
+    followers = Follow.objects.filter(userTo=user)
+    isFollower = False
+    for follower in followers:
+        if follower == currentUser:
+            isFollower = True
+            break
+    return render(request, "network/profile.html", {
+        "username": username,
+        "post_likes": post_likes,
+        "currentUser": currentUser,
+        "followers": followers,
+        "isFollower": isFollower
+    })
 
 def login_view(request):
     if request.method == "POST":
