@@ -18,11 +18,21 @@ def index(request):
 
 def getPosts(request, start, end):
     if request.method == 'GET':
+        shouldShowNext = False
+        shouldShowPrev = False 
         posts = sorted(Post.objects.all(), key= lambda post: post.date, reverse=True)
+
+        if end < len(posts) - 1:
+            shouldShowNext = True
+        if start > 0:
+            shouldShowPrev = True
+
         if end < len(posts):
             posts = posts[start:end+1]
         else:
             posts = posts[start:len(posts)]
+        
+
         post_likes = []
         for post in posts:
             post_likes.append({ 
@@ -33,8 +43,11 @@ def getPosts(request, start, end):
                 }, 
                 "likes": str(len(Like.objects.filter(post=post)))
             })
-        print(post_likes)
-        return JsonResponse({ "post_likes": post_likes})
+        return JsonResponse({ 
+            "post_likes": post_likes,
+            "shouldShowNext": shouldShowNext,
+            "shouldShowPrev": shouldShowPrev
+        })
     else:
         return HttpResponse("wrong page")
 

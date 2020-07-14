@@ -3,6 +3,67 @@
 {% block scripts %}
     <script>
 
+        const clearPosts = () => {
+            document.getElementById('posts').innerHTML = '';
+        }
+
+        const updatePosts = (startIndex, endIndex) => {
+            let url_temp = "{% url 'getPosts' 0 9 %}";
+            const url = url_temp.substring(0, url_temp.length - 3) + startIndex.toString() + "/" + endIndex.toString();
+            console.log(url)
+            fetch(url, {
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                clearPosts();
+                for(const key in data.post_likes){
+                    post_like= data.post_likes[key]
+                    const post= post_like.post;
+                    console.log(post_like)
+                    console.log(post)
+                    const likes = post_like.likes;
+                    const username = post.username;
+                    const postText = post.postText;
+                    const date = post.date;
+                    const postElement = createPostElement(username, likes, postText, date);
+                    console.log(postElement)
+                    document.querySelector('#posts').append(postElement)
+                }
+                const shouldShowPrev = data.shouldShowPrev;
+                const shouldShowNext = data.shouldShowNext;
+
+                if(shouldShowPrev) {
+                    console.log("SHOULD SHOW PREV IS TRUE")
+                    const prevButton = document.createElement('button')
+                    prevButton.startIndex = Math.max(startIndex - 10, 0);
+                    prevButton.endIndex = endIndex - 10;
+                    prevButton.innerHTML = 'Prev';
+                    prevButton.onclick = function() {
+                        updatePosts(this.startIndex, this.endIndex)
+                    }
+                    document.querySelector('#posts').append(prevButton)
+                }
+
+                if(shouldShowNext) {
+                    console.log("SHOULD SHOW NEXT IS TRUE")
+                    const nextButton = document.createElement('button')
+                    nextButton.innerHTML = 'Next';
+                    nextButton.startIndex = startIndex + 10;
+                    nextButton.endIndex = endIndex + 10;
+                    nextButton.onclick = function() {
+                        updatePosts(this.startIndex, this.endIndex)
+                    }
+                    document.querySelector('#posts').append(nextButton)
+                }
+                
+            })
+            .catch(err => {
+                console.log(err)
+            })
+        }
+
         const createPostElement = (username, likes, postText, date) => {
             console.log(date, likes)
             const postDiv = document.createElement('div');
@@ -56,7 +117,6 @@
             .then(response => response.json())
             .then(data => {
                 console.log(data)
-                
                 for(const key in data.post_likes){
                     post_like= data.post_likes[key]
                     const post= post_like.post;
@@ -70,6 +130,20 @@
                     console.log(postElement)
                     document.querySelector('#posts').append(postElement)
                 }
+                const shouldShowPrev = data.shouldShowPrev;
+                const shouldShowNext = data.shouldShowNext;
+
+                if(shouldShowNext) {
+                    const nextButton = document.createElement('button')
+                    nextButton.startIndex = 10;
+                    nextButton.endIndex = 19;
+                    nextButton.innerHTML = 'Next';
+                    nextButton.onclick = function() {
+                        updatePosts(this.startIndex, this.endIndex)
+                    }
+                    document.querySelector('#posts').append(nextButton)
+                }
+                
             })
             .catch(err => {
                 console.log(err)
@@ -95,36 +169,5 @@
     <div id="posts">
 
     </div>
-
-    <h1>
-        END OF NEW POSTS
-    </h1>
-
-    {% for post_like in post_likes %}
-        <div class="post">
-            <div class="post-body">
-                {{post_like.post.postText}}
-            </div>
-
-            <div class="row" style="height: 25%">
-                <div class="col">
-                    <div class="post-date">
-                        Posted on {{ post_like.post.date }}
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="post-username">
-                        Posted by {{ post_like.post.user.username }}
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="post-username">
-                        Likes: {{ post_like.likes }}
-                    </div>
-                </div>
-            </div>
-              
-        </div>
-    {% endfor %}
 
 {% endblock %}
