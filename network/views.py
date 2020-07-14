@@ -7,7 +7,11 @@ from django.urls import reverse
 from .models import Post, User
 
 def index(request):
-    return render(request, "network/index.html")
+    posts = sorted(Post.objects.all(), key= lambda post: post.date, reverse=True)
+    print(posts)
+    return render(request, "network/index.html", {
+        "posts": posts
+    })
 
 def post(request):
     if request.method == "POST":

@@ -2,15 +2,36 @@
 
 {% block body %}
     {% if user.is_authenticated %}
-        <p> Hello {{user.username}}</p>
+        <h2>New Post</h2>
         <form method="POST" action="{% url 'post' %}">
             {% csrf_token %}
-            <div class="form-group">
-                <textarea name="postText" placeholder="Make a new post..."></textarea>
+            <div class="form-group" style="height: 200px">
+                <textarea class="form-control" style="height: 100%; resize: none; width: 50%" name="postText" placeholder="Make a new post..."></textarea>
             </div>
-            <div class="form-group">
-                <input type="submit" value="Post">
-            </div>
+            <input class="btn btn-primary" type="submit" value="Post">
         </form>
     {% endif %}
+    
+    {% for post in posts %}
+        <div class="post">
+            <div class="post-body">
+                {{post.postText}}
+            </div>
+
+            <div class="row" style="height: 25%">
+                <div class="col">
+                    <div class="post-date">
+                        Posted on {{ post.date }}
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="post-username">
+                        Posted by {{ post.user.username }}
+                    </div>
+                </div>
+            </div>
+              
+        </div>
+    {% endfor %}
+
 {% endblock %}
