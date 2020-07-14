@@ -29,6 +29,34 @@ def post(request):
     else:
         return HttpResponse("No such page")
 
+def follow(request):
+    if request.method == "POST":
+        userFromName = request.POST["userFromName"]
+        userToName = request.POST["userToName"]
+
+        userFrom = User.objects.filter(username=userFromName)[0]
+        userTo = User.objects.filter(username=userToName)[0]
+        f = Follow(userFrom=userFrom, userTo=userTo)
+        f.save()
+        return HttpResponse("Follow success")
+    else:
+        return HttpResponse("Not found...")
+
+def unfollow(request):
+    if request.method == "POST":
+        userFromName = request.POST["userFromName"]
+        userToName = request.POST["userToName"]
+
+        userFrom = User.objects.filter(username=userFromName)[0]
+        userTo = User.objects.filter(username=userToName)[0]
+
+        f = Follow.objects.get(userFrom=userFrom, userTo=userTo)
+        f.delete()
+
+        return HttpResponse("Unfollow success")
+    else:
+        return HttpResponse("Not found...")
+
 def profile(request, username):
     user = User.objects.filter(username=username)[0]
     posts = Post.objects.filter(user=user)
@@ -39,7 +67,7 @@ def profile(request, username):
     followers = Follow.objects.filter(userTo=user)
     isFollower = False
     for follower in followers:
-        if follower == currentUser:
+        if follower.userFrom == currentUser:
             isFollower = True
             break
     return render(request, "network/profile.html", {
