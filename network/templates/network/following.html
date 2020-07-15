@@ -1,0 +1,173 @@
+{% extends "network/layout.html" %}
+
+{% block scripts %}
+    <script>
+
+        const clearPosts = () => {
+            document.getElementById('posts').innerHTML = '';
+        }
+
+        const updatePosts = (startIndex, endIndex) => {
+            let url_temp = "{% url 'getFollowing' 0 9 %}";
+            const url = url_temp.substring(0, url_temp.length - 3) + startIndex.toString() + "/" + endIndex.toString();
+            console.log(url)
+            fetch(url, {
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                clearPosts();
+                for(const key in data.post_likes){
+                    post_like= data.post_likes[key]
+                    const post= post_like.post;
+                    console.log(post_like)
+                    console.log(post)
+                    const likes = post_like.likes;
+                    const username = post.username;
+                    const postText = post.postText;
+                    const date = post.date;
+                    const postElement = createPostElement(username, likes, postText, date);
+                    console.log(postElement)
+                    document.querySelector('#posts').append(postElement)
+                }
+                const shouldShowPrev = data.shouldShowPrev;
+                const shouldShowNext = data.shouldShowNext;
+
+                if(shouldShowPrev) {
+                    console.log("SHOULD SHOW PREV IS TRUE")
+                    const prevButton = document.createElement('button')
+                    prevButton.startIndex = Math.max(startIndex - 10, 0);
+                    prevButton.endIndex = endIndex - 10;
+                    prevButton.innerHTML = 'Prev';
+                    prevButton.onclick = function() {
+                        updatePosts(this.startIndex, this.endIndex)
+                    }
+                    document.querySelector('#posts').append(prevButton)
+                }
+
+                if(shouldShowNext) {
+                    console.log("SHOULD SHOW NEXT IS TRUE")
+                    const nextButton = document.createElement('button')
+                    nextButton.innerHTML = 'Next';
+                    nextButton.startIndex = startIndex + 10;
+                    nextButton.endIndex = endIndex + 10;
+                    nextButton.onclick = function() {
+                        updatePosts(this.startIndex, this.endIndex)
+                    }
+                    document.querySelector('#posts').append(nextButton)
+                }
+                
+            })
+            .catch(err => {
+                console.log(err)
+            })
+        }
+
+        const createPostElement = (username, likes, postText, date) => {
+            console.log(date, likes)
+            const postDiv = document.createElement('div');
+            postDiv.className = "post";
+
+            const postBodyDiv = document.createElement('div');
+            postBodyDiv.className = "post-body";
+            postBodyDiv.innerHTML = postText
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "row";
+            rowDiv.style.height = "25%";
+
+            const colDate = document.createElement('div');
+            colDate.className = 'col';
+            const colUsername = document.createElement('div');
+            colUsername.className = 'col';
+            const colLikes = document.createElement('div');
+            colLikes.className = 'col';
+
+            const dateElement = document.createElement('div');
+            dateElement.className = 'post-date';
+            dateElement.innerHTML = `Posted on ${date}`;
+            colDate.append(dateElement);
+            rowDiv.append(colDate);
+
+            const usernameElement = document.createElement('div');
+            usernameElement.className = 'post-username';
+            usernameElement.innerHTML = 'Posted by ' + username;
+            colUsername.append(usernameElement);
+            rowDiv.append(colUsername);
+
+            const likesElement = document.createElement('div');
+            likesElement.className = 'post-username';
+            likesElement.innerHTML = `Likes: ${likes}`;
+            colLikes.append(likesElement);
+            rowDiv.append(colLikes);
+
+            postDiv.append(postBodyDiv);
+            postDiv.append(rowDiv);
+
+            return postDiv;
+        }
+
+        window.addEventListener('DOMContentLoaded', (event) => {
+            //const h = document.createElement('h1')
+
+            fetch("{% url 'getFollowing' 0 9 %}", {
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                for(const key in data.post_likes){
+                    post_like= data.post_likes[key]
+                    const post= post_like.post;
+                    console.log(post_like)
+                    console.log(post)
+                    const likes = post_like.likes;
+                    const username = post.username;
+                    const postText = post.postText;
+                    const date = post.date;
+                    const postElement = createPostElement(username, likes, postText, date);
+                    console.log(postElement)
+                    document.querySelector('#posts').append(postElement)
+                }
+                const shouldShowPrev = data.shouldShowPrev;
+                const shouldShowNext = data.shouldShowNext;
+
+                if(shouldShowNext) {
+                    const nextButton = document.createElement('button')
+                    nextButton.startIndex = 10;
+                    nextButton.endIndex = 19;
+                    nextButton.innerHTML = 'Next';
+                    nextButton.onclick = function() {
+                        updatePosts(this.startIndex, this.endIndex)
+                    }
+                    document.querySelector('#posts').append(nextButton)
+                }
+                
+            })
+            .catch(err => {
+                console.log(err)
+            })
+
+            //document.querySelector('#posts').append(h)
+        })
+    </script>
+{% endblock %}
+
+{% block body %}
+    {% if user.is_authenticated %}
+        <h2>New Post</h2>
+        <form method="POST" action="{% url 'post' %}">
+            {% csrf_token %}
+            <div class="form-group" style="height: 200px">
+                <textarea class="form-control" style="height: 100%; resize: none; width: 50%" name="postText" placeholder="Make a new post..."></textarea>
+            </div>
+            <input class="btn btn-primary" type="submit" value="Post">
+        </form>
+    {% endif %}
+    
+    <div id="posts">
+
+    </div>
+
+{% endblock %}

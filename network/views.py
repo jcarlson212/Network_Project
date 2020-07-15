@@ -8,13 +8,73 @@ from django.http import JsonResponse
 from .models import Follow, Like, Post, User
 
 def index(request):
-    posts = sorted(Post.objects.all(), key= lambda post: post.date, reverse=True)
+    
+    return render(request, "network/index.html")
+
+def following(request):
+    posts = Post.objects.all()
+    currentUser = User.objects.get(username=request.user.username)
+    follows = Follow.objects.filter(userFrom=currentUser)
+    usersFollowed = set()
+    for f in follows:
+        usersFollowed.add(f.userTo.username)
+    followedPosts = []
+    for p in posts:
+        if p.user.username in usersFollowed:
+            followedPosts.append(p)
+            
+    posts = sorted(followedPosts, key= lambda post: post.date, reverse=True)
     post_likes = []
     for post in posts:
         post_likes.append({ "post": post, "likes": len(Like.objects.filter(post=post))})
-    return render(request, "network/index.html", {
+    return render(request, "network/following.html", {
         "post_likes": post_likes
     })
+
+def getFollowing(request, start, end):
+    if request.method == 'GET':
+        shouldShowNext = False
+        shouldShowPrev = False 
+        posts = Post.objects.all()
+        currentUser = User.objects.get(username=request.user.username)
+        follows = Follow.objects.filter(userFrom=currentUser)
+        usersFollowed = set()
+        for f in follows:
+            usersFollowed.add(f.userTo.username)
+        followedPosts = []
+        for p in posts:
+            if p.user.username in usersFollowed:
+                followedPosts.append(p)
+                
+        posts = sorted(followedPosts, key= lambda post: post.date, reverse=True)
+        if end < len(posts) - 1:
+            shouldShowNext = True
+        if start > 0:
+            shouldShowPrev = True
+
+        if end < len(posts):
+            posts = posts[start:end+1]
+        else:
+            posts = posts[start:len(posts)]
+            
+
+        post_likes = []
+        for post in posts:
+            post_likes.append({ 
+                "post": {
+                    "username": post.user.username,
+                    "postText": post.postText,
+                    "date": str(post.date)
+                }, 
+                "likes": str(len(Like.objects.filter(post=post)))
+            })
+        return JsonResponse({ 
+            "post_likes": post_likes,
+            "shouldShowNext": shouldShowNext,
+            "shouldShowPrev": shouldShowPrev
+        })
+    else:
+        return HttpResponse('Does not exist')
 
 def getPosts(request, start, end):
     if request.method == 'GET':
@@ -108,8 +168,10 @@ def follow(request):
 
         userFrom = User.objects.filter(username=userFromName)[0]
         userTo = User.objects.filter(username=userToName)[0]
-        f = Follow(userFrom=userFrom, userTo=userTo)
-        f.save()
+        if len(Follow.objects.filter(userFrom=userFrom, userTo=userTo)) == 0:
+            f = Follow(userFrom=userFrom, userTo=userTo)
+            f.save()
+
         return HttpResponse("Follow success")
     else:
         return HttpResponse("Not found...")
@@ -121,9 +183,9 @@ def unfollow(request):
 
         userFrom = User.objects.filter(username=userFromName)[0]
         userTo = User.objects.filter(username=userToName)[0]
-
-        f = Follow.objects.get(userFrom=userFrom, userTo=userTo)
-        f.delete()
+        if len(Follow.objects.filter(userFrom=userFrom, userTo=userTo)) > 0:
+            f = Follow.objects.get(userFrom=userFrom, userTo=userTo)
+            f.delete()
 
         return HttpResponse("Unfollow success")
     else:
