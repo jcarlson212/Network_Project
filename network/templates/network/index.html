@@ -192,7 +192,10 @@
             }
 
             colEdit.append(editButton);
-            rowDiv.append(colEdit);
+            if(username === "{{user.username}}") {
+                rowDiv.append(colEdit);
+            }
+            
 
             postDiv.append(postBodyDiv);
             postDiv.append(rowDiv);
