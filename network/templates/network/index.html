@@ -24,10 +24,11 @@
                     console.log(post_like)
                     console.log(post)
                     const likes = post_like.likes;
+                    const id = post.id
                     const username = post.username;
                     const postText = post.postText;
                     const date = post.date;
-                    const postElement = createPostElement(username, likes, postText, date);
+                    const postElement = createPostElement(username, likes, postText, date, id);
                     console.log(postElement)
                     document.querySelector('#posts').append(postElement)
                 }

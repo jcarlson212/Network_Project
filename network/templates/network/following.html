@@ -1,8 +1,8 @@
 {% extends "network/layout.html" %}
 
 {% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
     <script>
-
         const clearPosts = () => {
             document.getElementById('posts').innerHTML = '';
         }
@@ -24,10 +24,11 @@
                     console.log(post_like)
                     console.log(post)
                     const likes = post_like.likes;
+                    const id = post.id
                     const username = post.username;
                     const postText = post.postText;
                     const date = post.date;
-                    const postElement = createPostElement(username, likes, postText, date);
+                    const postElement = createPostElement(username, likes, postText, date, id);
                     console.log(postElement)
                     document.querySelector('#posts').append(postElement)
                 }
@@ -64,7 +65,86 @@
             })
         }
 
-        const createPostElement = (username, likes, postText, date) => {
+
+        const save = (postDiv, id) => {
+            const id2 = id;
+            let children = postDiv.children
+            const text = children[0].value;
+            const date = children[1].children[0].children[0].innerHTML
+            //First, update the post
+            fetch(`{% url 'save' %}`, {
+                method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+                credentials: 'same-origin', // include, *same-origin, omit
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': Cookies.get('csrftoken')
+                },
+                body: JSON.stringify({
+                    text: text,
+                    username: "{{user.username}}",
+                    date: date,
+                    id: id2
+                }) // body data type must match "Content-Type" header
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log(data);
+                //first we swap the div element with the textarea
+                if(data === "success"){
+                    const postBodyDiv = document.createElement('div');
+                    postBodyDiv.className = "post-body";
+                    postBodyDiv.innerHTML = text;
+                    postDiv.insertBefore(postBodyDiv, postDiv.children[0] )
+                    postDiv.children[1].remove()
+                    
+                    //next, we swap the edit button with the save 
+                    const row = children[postDiv.children.length - 1];
+                    row.children[row.children.length-1].children[0].remove()
+                    const editButton = document.createElement('button');
+                    editButton.className = 'post-username';
+                    editButton.innerHTML = "Edit";
+                    editButton.onclick = function() {
+                        edit(postDiv, id);
+                    }
+                    row.children[row.children.length-1].append(editButton);
+                }
+            })
+            .catch(err => {
+                console.log(err);
+            })
+        }
+
+        const edit = (postDiv, id) => {
+            const id2 = id
+            console.log(postDiv)
+            let children = postDiv.children
+            
+            const text = children[0].innerHTML;
+            
+            //first we swap the textarea element with the div
+            const textareaElement = document.createElement('textarea');
+            textareaElement.innerHTML = text;
+            textareaElement.className = "post-body";
+            textareaElement.style.resize = "none";
+            textareaElement.style.backgroundColor = "lightblue";
+            textareaElement.style.borderStyle = "dotted";
+            postDiv.insertBefore(textareaElement, postDiv.children[0] )
+            postDiv.children[1].remove()
+            
+            //next, we swap the save button with the edit 
+            const row = children[postDiv.children.length - 1];
+            row.children[row.children.length-1].children[0].remove()
+            saveButton = document.createElement('button');
+            saveButton.className = 'post-username';
+            saveButton.innerHTML = "Save";
+            saveButton.onclick = function() {
+                save(postDiv, id2);
+            }
+            row.children[row.children.length-1].append(saveButton);
+        }
+
+        const createPostElement = (username, likes, postText, date, id) => {
+            const id2 = id;
             console.log(date, likes)
             const postDiv = document.createElement('div');
             postDiv.className = "post";
@@ -83,6 +163,9 @@
             colUsername.className = 'col';
             const colLikes = document.createElement('div');
             colLikes.className = 'col';
+            const colEdit = document.createElement('div');
+            colEdit.className = 'col';
+            colEdit.style.textAlign = 'center';
 
             const dateElement = document.createElement('div');
             dateElement.className = 'post-date';
@@ -102,6 +185,19 @@
             colLikes.append(likesElement);
             rowDiv.append(colLikes);
 
+            const editButton = document.createElement('button');
+            editButton.className = 'post-username';
+            editButton.innerHTML = "Edit";
+            editButton.onclick = function() {
+                edit(postDiv, id2);
+            }
+
+            colEdit.append(editButton);
+            if(username === "{{user.username}}") {
+                rowDiv.append(colEdit);
+            }
+            
+
             postDiv.append(postBodyDiv);
             postDiv.append(rowDiv);
 
@@ -116,18 +212,15 @@
             })
             .then(response => response.json())
             .then(data => {
-                console.log(data)
                 for(const key in data.post_likes){
                     post_like= data.post_likes[key]
                     const post= post_like.post;
-                    console.log(post_like)
-                    console.log(post)
+                    const id = post.id;
                     const likes = post_like.likes;
                     const username = post.username;
                     const postText = post.postText;
                     const date = post.date;
-                    const postElement = createPostElement(username, likes, postText, date);
-                    console.log(postElement)
+                    const postElement = createPostElement(username, likes, postText, date, id);
                     document.querySelector('#posts').append(postElement)
                 }
                 const shouldShowPrev = data.shouldShowPrev;
