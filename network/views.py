@@ -51,6 +51,42 @@ def getPosts(request, start, end):
     else:
         return HttpResponse("wrong page")
 
+def getPostsProfile(request, username, start, end):
+    if request.method == 'GET':
+        shouldShowNext = False
+        shouldShowPrev = False 
+        profileUser = User.objects.get(username=username)
+        posts = sorted(Post.objects.filter(user=profileUser), key= lambda post: post.date, reverse=True)
+
+        if end < len(posts) - 1:
+            shouldShowNext = True
+        if start > 0:
+            shouldShowPrev = True
+
+        if end < len(posts):
+            posts = posts[start:end+1]
+        else:
+            posts = posts[start:len(posts)]
+        
+
+        post_likes = []
+        for post in posts:
+            post_likes.append({ 
+                "post": {
+                    "username": post.user.username,
+                    "postText": post.postText,
+                    "date": str(post.date)
+                }, 
+                "likes": str(len(Like.objects.filter(post=post)))
+            })
+        return JsonResponse({ 
+            "post_likes": post_likes,
+            "shouldShowNext": shouldShowNext,
+            "shouldShowPrev": shouldShowPrev
+        })
+    else:
+        return HttpResponse("wrong page")
+
 def post(request):
     if request.method == "POST":
         username = request.user.username
