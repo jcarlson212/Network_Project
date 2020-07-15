@@ -64,6 +64,59 @@
             })
         }
 
+        const save = (postDiv) => {
+            console.log(postDiv)
+            let children = postDiv.children
+            
+            const text = children[0].innerHTML;
+            
+            //first we swap the div element with the textarea
+            const postBodyDiv = document.createElement('div');
+            postBodyDiv.className = "post-body";
+            postBodyDiv.innerHTML = text;
+            postDiv.insertBefore(postBodyDiv, postDiv.children[0] )
+            postDiv.children[1].remove()
+            
+            //next, we swap the edit button with the save 
+            const row = children[postDiv.children.length - 1];
+            row.children[row.children.length-1].children[0].remove()
+            const editButton = document.createElement('button');
+            editButton.className = 'post-username';
+            editButton.innerHTML = "Edit";
+            editButton.onclick = function() {
+                edit(postDiv);
+            }
+            row.children[row.children.length-1].append(editButton);
+        }
+
+        const edit = (postDiv) => {
+            console.log(postDiv)
+            let children = postDiv.children
+            
+            const text = children[0].innerHTML;
+            
+            //first we swap the textarea element with the div
+            const textareaElement = document.createElement('textarea');
+            textareaElement.innerHTML = text;
+            textareaElement.className = "post-body";
+            textareaElement.style.resize = "none";
+            textareaElement.style.backgroundColor = "lightblue";
+            textareaElement.style.borderStyle = "dotted";
+            postDiv.insertBefore(textareaElement, postDiv.children[0] )
+            postDiv.children[1].remove()
+            
+            //next, we swap the save button with the edit 
+            const row = children[postDiv.children.length - 1];
+            row.children[row.children.length-1].children[0].remove()
+            saveButton = document.createElement('button');
+            saveButton.className = 'post-username';
+            saveButton.innerHTML = "Save";
+            saveButton.onclick = function() {
+                save(postDiv);
+            }
+            row.children[row.children.length-1].append(saveButton);
+        }
+
         const createPostElement = (username, likes, postText, date) => {
             console.log(date, likes)
             const postDiv = document.createElement('div');
@@ -83,6 +136,9 @@
             colUsername.className = 'col';
             const colLikes = document.createElement('div');
             colLikes.className = 'col';
+            const colEdit = document.createElement('div');
+            colEdit.className = 'col';
+            colEdit.style.textAlign = 'center';
 
             const dateElement = document.createElement('div');
             dateElement.className = 'post-date';
@@ -101,6 +157,16 @@
             likesElement.innerHTML = `Likes: ${likes}`;
             colLikes.append(likesElement);
             rowDiv.append(colLikes);
+
+            const editButton = document.createElement('button');
+            editButton.className = 'post-username';
+            editButton.innerHTML = "Edit";
+            editButton.onclick = function() {
+                edit(postDiv);
+            }
+
+            colEdit.append(editButton);
+            rowDiv.append(colEdit);
 
             postDiv.append(postBodyDiv);
             postDiv.append(rowDiv);
