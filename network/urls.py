@@ -17,5 +17,6 @@ urlpatterns = [
     path('getPosts/<int:start>/<int:end>', views.getPosts, name="getPosts"),
     path('getPostsProfile/<username>/<int:start>/<int:end>', views.getPostsProfile, name="getPostsProfile"),
     path('following', views.following, name="following"),
-    path('getFollowing/<int:start>/<int:end>', views.getFollowing, name="getFollowing")
+    path('getFollowing/<int:start>/<int:end>', views.getFollowing, name="getFollowing"),
+    path('save', views.save, name="save")
 ]

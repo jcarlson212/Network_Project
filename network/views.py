@@ -4,6 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.http import JsonResponse
+import json
 
 from .models import Follow, Like, Post, User
 
@@ -14,6 +15,7 @@ def index(request):
 def following(request):
     posts = Post.objects.all()
     currentUser = User.objects.get(username=request.user.username)
+
     follows = Follow.objects.filter(userFrom=currentUser)
     usersFollowed = set()
     for f in follows:
@@ -99,7 +101,8 @@ def getPosts(request, start, end):
                 "post": {
                     "username": post.user.username,
                     "postText": post.postText,
-                    "date": str(post.date)
+                    "date": str(post.date),
+                    "id": str(post.id)
                 }, 
                 "likes": str(len(Like.objects.filter(post=post)))
             })
@@ -135,7 +138,8 @@ def getPostsProfile(request, username, start, end):
                 "post": {
                     "username": post.user.username,
                     "postText": post.postText,
-                    "date": str(post.date)
+                    "date": str(post.date),
+                    "id": str(post.id)
                 }, 
                 "likes": str(len(Like.objects.filter(post=post)))
             })
@@ -175,6 +179,23 @@ def follow(request):
         return HttpResponse("Follow success")
     else:
         return HttpResponse("Not found...")
+
+
+def save(request):
+    if request.method == "PUT":
+        json_data = json.loads(str(request.body, encoding='utf-8'))
+
+        username = json_data["username"]
+        post_id = json_data["id"]
+
+        user = User.objects.filter(username=username)[0]
+        text = json_data["text"]
+        post = Post.objects.get(id=post_id)
+        post.postText = text
+        post.save()
+        return HttpResponse("success")
+    else:
+        return HttpResponse("No such page...")
 
 def unfollow(request):
     if request.method == "POST":
