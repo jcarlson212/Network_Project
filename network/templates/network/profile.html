@@ -315,6 +315,15 @@
 {% endblock %}
 
 {% block body %}
+    <div style="text-align: center;">
+        <h1>{{ username }}</h1>
+        <h5>Number of Followers: {{ numberOfFollowers }}</h5>
+        <h5>Number of users they follow: {{ numberOfFollows }}</h5>
+        {% load static %}
+        <img src="{% static '2uut95.jpg' %}" width="200px" height="200px">
+    </div>
+    
+
     {% if user.is_authenticated %}
         {% if user.username != username %}
             {% if isFollower %}

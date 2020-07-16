@@ -12,96 +12,101 @@ def index(request):
     return render(request, "network/index.html")
 
 def following(request):
-    return render(request, "network/following.html")
+    if request.user.is_authenticated:
+        return render(request, "network/following.html")
+    return HttpResponse("Not signed in")
 
 def like(request):
-    if request.method == 'PUT':
-        json_data = json.loads(str(request.body, encoding='utf-8'))
-        print(json_data)
-        current_username = json_data["current_username"]
-        post_id = json_data["id"]
+    if request.user.is_authenticated:
+        if request.method == 'PUT':
+            json_data = json.loads(str(request.body, encoding='utf-8'))
+            print(json_data)
+            current_username = json_data["current_username"]
+            post_id = json_data["id"]
 
-        user = User.objects.filter(username=current_username)[0]
-        
-        post = Post.objects.get(id=post_id)
-        if len(Like.objects.filter(user=user, post=post)) == 0:
-            new_like = Like(user=user, post=post)
-            new_like.save()
-            post.save()
+            user = User.objects.filter(username=current_username)[0]
+            
+            post = Post.objects.get(id=post_id)
+            if len(Like.objects.filter(user=user, post=post)) == 0:
+                new_like = Like(user=user, post=post)
+                new_like.save()
+                post.save()
 
-        return HttpResponse(str(len(Like.objects.filter(post=post))))
-    else:
-        return HttpResponse("No such page...")
+            return HttpResponse(str(len(Like.objects.filter(post=post))))
+ 
+    return HttpResponse("No such page...")
 
 def unlike(request):
-    if request.method == 'PUT':
-        json_data = json.loads(str(request.body, encoding='utf-8'))
+    if request.user.is_authenticated:
+        if request.method == 'PUT':
+            json_data = json.loads(str(request.body, encoding='utf-8'))
 
-        current_username = json_data["current_username"]
-        post_id = json_data["id"]
+            current_username = json_data["current_username"]
+            post_id = json_data["id"]
 
-        user = User.objects.filter(username=current_username)[0]
+            user = User.objects.filter(username=current_username)[0]
+            
+            post = Post.objects.get(id=post_id)
+            if len(Like.objects.filter(user=user, post=post)) > 0:
+                like_to_remove = Like.objects.filter(user=user, post=post)[0]
+                like_to_remove.delete()
+            
+            return HttpResponse(str(len(Like.objects.filter(post=post))))
         
-        post = Post.objects.get(id=post_id)
-        if len(Like.objects.filter(user=user, post=post)) > 0:
-            like_to_remove = Like.objects.filter(user=user, post=post)[0]
-            like_to_remove.delete()
         
-        return HttpResponse(str(len(Like.objects.filter(post=post))))
-    else:
-        print("dsfsdf")
-        return HttpResponse("No such page...")
+    return HttpResponse("No such page...")
 
 
 def getFollowing(request, start, end):
-    if request.method == 'GET':
-        shouldShowNext = False
-        shouldShowPrev = False 
-        posts = Post.objects.all()
-        currentUser = User.objects.get(username=request.user.username)
-        follows = Follow.objects.filter(userFrom=currentUser)
-        usersFollowed = set()
-        for f in follows:
-            usersFollowed.add(f.userTo.username)
-        followedPosts = []
-        for p in posts:
-            if p.user.username in usersFollowed:
-                followedPosts.append(p)
+    if request.user.is_authenticated:
+        if request.method == 'GET':
+            shouldShowNext = False
+            shouldShowPrev = False 
+            posts = Post.objects.all()
+            currentUser = User.objects.get(username=request.user.username)
+            follows = Follow.objects.filter(userFrom=currentUser)
+            usersFollowed = set()
+            for f in follows:
+                usersFollowed.add(f.userTo.username)
+            followedPosts = []
+            for p in posts:
+                if p.user.username in usersFollowed:
+                    followedPosts.append(p)
+                    
+            posts = sorted(followedPosts, key= lambda post: post.date, reverse=True)
+            if end < len(posts) - 1:
+                shouldShowNext = True
+            if start > 0:
+                shouldShowPrev = True
+
+            if end < len(posts):
+                posts = posts[start:end+1]
+            else:
+                posts = posts[start:len(posts)]
                 
-        posts = sorted(followedPosts, key= lambda post: post.date, reverse=True)
-        if end < len(posts) - 1:
-            shouldShowNext = True
-        if start > 0:
-            shouldShowPrev = True
 
-        if end < len(posts):
-            posts = posts[start:end+1]
-        else:
-            posts = posts[start:len(posts)]
-            
-
-        post_likes = []
-        for post in posts:
-            isLiked = False
-            if len(Like.objects.filter(user=request.user, post=post)) > 0:
-                isLiked = True
-            post_likes.append({ 
-                "post": {
-                    "username": post.user.username,
-                    "postText": post.postText,
-                    "date": str(post.date),
-                    "id": str(post.id)
-                }, 
-                "likes": str(len(Like.objects.filter(post=post))),
-                "isLiked": isLiked
+            post_likes = []
+            for post in posts:
+                isLiked = False
+                if len(Like.objects.filter(user=request.user, post=post)) > 0:
+                    isLiked = True
+                post_likes.append({ 
+                    "post": {
+                        "username": post.user.username,
+                        "postText": post.postText,
+                        "date": str(post.date),
+                        "id": str(post.id)
+                    }, 
+                    "likes": str(len(Like.objects.filter(post=post))),
+                    "isLiked": isLiked
+                })
+            return JsonResponse({ 
+                "post_likes": post_likes,
+                "shouldShowNext": shouldShowNext,
+                "shouldShowPrev": shouldShowPrev
             })
-        return JsonResponse({ 
-            "post_likes": post_likes,
-            "shouldShowNext": shouldShowNext,
-            "shouldShowPrev": shouldShowPrev
-        })
-    else:
-        return HttpResponse('Does not exist')
+
+    return HttpResponse('Does not exist')
 
 def getPosts(request, start, end):
     if request.method == 'GET':
@@ -123,8 +128,9 @@ def getPosts(request, start, end):
         post_likes = []
         for post in posts:
             isLiked = False
-            if len(Like.objects.filter(user=request.user, post=post)) > 0:
-                isLiked = True
+            if request.user.is_authenticated:
+                if len(Like.objects.filter(user=request.user, post=post)) > 0:
+                    isLiked = True
             post_likes.append({ 
                 "post": {
                     "username": post.user.username,
@@ -144,7 +150,7 @@ def getPosts(request, start, end):
         return HttpResponse("wrong page")
 
 def getPostsProfile(request, username, start, end):
-    if request.method == 'GET':
+    if request.method == 'GET' and request.user.is_authenticated:
         shouldShowNext = False
         shouldShowPrev = False 
         profileUser = User.objects.get(username=username)
@@ -185,7 +191,7 @@ def getPostsProfile(request, username, start, end):
         return HttpResponse("wrong page")
 
 def post(request):
-    if request.method == "POST":
+    if request.method == "POST" and request.user.is_authenticated:
         username = request.user.username
         postText = request.POST["postText"]
         user = User.objects.filter(username=username)[0]
@@ -199,7 +205,7 @@ def post(request):
         return HttpResponse("No such page")
 
 def follow(request):
-    if request.method == "POST":
+    if request.method == "POST" and request.user.is_authenticated:
         userFromName = request.POST["userFromName"]
         userToName = request.POST["userToName"]
 
@@ -215,7 +221,7 @@ def follow(request):
 
 
 def save(request):
-    if request.method == "PUT":
+    if request.method == "PUT" and request.user.is_authenticated:
         json_data = json.loads(str(request.body, encoding='utf-8'))
 
         username = json_data["username"]
@@ -231,7 +237,7 @@ def save(request):
         return HttpResponse("No such page...")
 
 def unfollow(request):
-    if request.method == "POST":
+    if request.method == "POST" and request.user.is_authenticated:
         userFromName = request.POST["userFromName"]
         userToName = request.POST["userToName"]
 
@@ -247,25 +253,31 @@ def unfollow(request):
 
 
 def profile(request, username):
-    user = User.objects.filter(username=username)[0]
-    posts = Post.objects.filter(user=user)
-    post_likes = []
-    for post in posts:
-        post_likes.append({ "post": post, "likes": len(Like.objects.filter(post=post))})
-    currentUser = User.objects.filter(username=request.user.username)[0]
-    followers = Follow.objects.filter(userTo=user)
-    isFollower = False
-    for follower in followers:
-        if follower.userFrom == currentUser:
-            isFollower = True
-            break
-    return render(request, "network/profile.html", {
-        "username": username,
-        "post_likes": post_likes,
-        "currentUser": currentUser,
-        "followers": followers,
-        "isFollower": isFollower
-    })
+    if request.user.is_authenticated:
+        user = User.objects.filter(username=username)[0]
+        posts = Post.objects.filter(user=user)
+        post_likes = []
+        for post in posts:
+            post_likes.append({ "post": post, "likes": len(Like.objects.filter(post=post))})
+        currentUser = User.objects.filter(username=request.user.username)[0]
+        followers = Follow.objects.filter(userTo=user)
+        isFollower = False
+        for follower in followers:
+            if follower.userFrom == currentUser:
+                isFollower = True
+                break
+        
+        followings = Follow.objects.filter(userFrom=user)
+        return render(request, "network/profile.html", {
+            "username": username,
+            "post_likes": post_likes,
+            "currentUser": currentUser,
+            "followers": followers,
+            "numberOfFollowers": str(len(followers)),
+            "numberOfFollows": str(len(followings)),
+            "isFollower": isFollower
+        })
+    return HttpResponse("Not signed in...")
 
 def login_view(request):
     if request.method == "POST":

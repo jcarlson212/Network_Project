@@ -2,6 +2,7 @@
 
 {% block scripts %}
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+    {% if user.is_authenticated %}
     <script>
         const clearPosts = () => {
             document.getElementById('posts').innerHTML = '';
@@ -245,6 +246,7 @@
             likesElement.innerHTML = `Likes: ${likes}`;
             colLikes.append(likesElement);
             rowDiv.append(colLikes);
+            
 
             const editButton = document.createElement('button');
             editButton.className = 'post-edit';
@@ -322,6 +324,104 @@
             //document.querySelector('#posts').append(h)
         })
     </script>
+    {% else %}
+    <script>
+        const createPostElement = (username, likes, postText, date, id, isLiked) => {
+            const id2 = id;
+            console.log(date, likes)
+            const postDiv = document.createElement('div');
+            postDiv.className = "post";
+
+            const postBodyDiv = document.createElement('div');
+            postBodyDiv.className = "post-body";
+            const bodyText = document.createElement('p');
+            bodyText.textContent = postText;
+            postBodyDiv.append(bodyText);
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "row";
+            rowDiv.style.height = "25%";
+
+            const colDate = document.createElement('div');
+            colDate.className = 'col';
+            const colUsername = document.createElement('div');
+            colUsername.className = 'col';
+            const colLikes = document.createElement('div');
+            colLikes.className = 'col';
+            const colEdit = document.createElement('div');
+            colEdit.className = 'col';
+            colEdit.style.textAlign = 'center';
+            const colLikeButton = document.createElement('div');
+            colLikeButton.className = 'col';
+            
+
+            const dateElement = document.createElement('div');
+            dateElement.className = 'post-date';
+            dateElement.innerHTML = `Posted on ${date}`;
+            colDate.append(dateElement);
+            rowDiv.append(colDate);
+
+            const usernameElement = document.createElement('div');
+            usernameElement.className = 'post-username';
+            usernameElement.innerHTML = 'Posted by ' + username;
+            colUsername.append(usernameElement);
+            rowDiv.append(colUsername);
+
+            const likesElement = document.createElement('div');
+            likesElement.className = 'post-username';
+            likesElement.innerHTML = `Likes: ${likes}`;
+            colLikes.append(likesElement);
+            rowDiv.append(colLikes);
+            
+            postDiv.append(postBodyDiv);
+            postDiv.append(rowDiv);
+
+            return postDiv;
+        }
+        window.addEventListener('DOMContentLoaded', (event) => {
+            //const h = document.createElement('h1')
+
+            fetch("{% url 'getPosts' 0 9 %}", {
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                for(const key in data.post_likes){
+                    post_like= data.post_likes[key]
+                    const post= post_like.post;
+                    const id = post.id;
+                    const likes = post_like.likes;
+                    const isLiked = post_like.isLiked
+                    const username = post.username;
+                    const postText = post.postText;
+                    const date = post.date;
+                    const postElement = createPostElement(username, likes, postText, date, id, isLiked);
+                    document.querySelector('#posts').append(postElement)
+                }
+                const shouldShowPrev = data.shouldShowPrev;
+                const shouldShowNext = data.shouldShowNext;
+
+                if(shouldShowNext) {
+                    const nextButton = document.createElement('button')
+                    nextButton.startIndex = 10;
+                    nextButton.endIndex = 19;
+                    nextButton.innerHTML = 'Next';
+                    nextButton.onclick = function() {
+                        updatePosts(this.startIndex, this.endIndex)
+                    }
+                    document.querySelector('#posts').append(nextButton)
+                }
+                
+            })
+            .catch(err => {
+                console.log(err)
+            })
+
+            //document.querySelector('#posts').append(h)
+        })
+    </script>
+    {% endif %}
+
 {% endblock %}
 
 {% block body %}
