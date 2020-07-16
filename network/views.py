@@ -9,29 +9,49 @@ import json
 from .models import Follow, Like, Post, User
 
 def index(request):
-    
     return render(request, "network/index.html")
 
 def following(request):
-    posts = Post.objects.all()
-    currentUser = User.objects.get(username=request.user.username)
+    return render(request, "network/following.html")
 
-    follows = Follow.objects.filter(userFrom=currentUser)
-    usersFollowed = set()
-    for f in follows:
-        usersFollowed.add(f.userTo.username)
-    followedPosts = []
-    for p in posts:
-        if p.user.username in usersFollowed:
-            followedPosts.append(p)
-            
-    posts = sorted(followedPosts, key= lambda post: post.date, reverse=True)
-    post_likes = []
-    for post in posts:
-        post_likes.append({ "post": post, "likes": len(Like.objects.filter(post=post))})
-    return render(request, "network/following.html", {
-        "post_likes": post_likes
-    })
+def like(request):
+    if request.method == 'PUT':
+        json_data = json.loads(str(request.body, encoding='utf-8'))
+        print(json_data)
+        current_username = json_data["current_username"]
+        post_id = json_data["id"]
+
+        user = User.objects.filter(username=current_username)[0]
+        
+        post = Post.objects.get(id=post_id)
+        if len(Like.objects.filter(user=user, post=post)) == 0:
+            new_like = Like(user=user, post=post)
+            new_like.save()
+            post.save()
+
+        return HttpResponse(str(len(Like.objects.filter(post=post))))
+    else:
+        return HttpResponse("No such page...")
+
+def unlike(request):
+    if request.method == 'PUT':
+        json_data = json.loads(str(request.body, encoding='utf-8'))
+
+        current_username = json_data["current_username"]
+        post_id = json_data["id"]
+
+        user = User.objects.filter(username=current_username)[0]
+        
+        post = Post.objects.get(id=post_id)
+        if len(Like.objects.filter(user=user, post=post)) > 0:
+            like_to_remove = Like.objects.filter(user=user, post=post)[0]
+            like_to_remove.delete()
+        
+        return HttpResponse(str(len(Like.objects.filter(post=post))))
+    else:
+        print("dsfsdf")
+        return HttpResponse("No such page...")
+
 
 def getFollowing(request, start, end):
     if request.method == 'GET':
@@ -62,13 +82,18 @@ def getFollowing(request, start, end):
 
         post_likes = []
         for post in posts:
+            isLiked = False
+            if len(Like.objects.filter(user=request.user, post=post)) > 0:
+                isLiked = True
             post_likes.append({ 
                 "post": {
                     "username": post.user.username,
                     "postText": post.postText,
-                    "date": str(post.date)
+                    "date": str(post.date),
+                    "id": str(post.id)
                 }, 
-                "likes": str(len(Like.objects.filter(post=post)))
+                "likes": str(len(Like.objects.filter(post=post))),
+                "isLiked": isLiked
             })
         return JsonResponse({ 
             "post_likes": post_likes,
@@ -97,6 +122,9 @@ def getPosts(request, start, end):
 
         post_likes = []
         for post in posts:
+            isLiked = False
+            if len(Like.objects.filter(user=request.user, post=post)) > 0:
+                isLiked = True
             post_likes.append({ 
                 "post": {
                     "username": post.user.username,
@@ -104,7 +132,8 @@ def getPosts(request, start, end):
                     "date": str(post.date),
                     "id": str(post.id)
                 }, 
-                "likes": str(len(Like.objects.filter(post=post)))
+                "likes": str(len(Like.objects.filter(post=post))),
+                "isLiked": isLiked
             })
         return JsonResponse({ 
             "post_likes": post_likes,
@@ -134,6 +163,9 @@ def getPostsProfile(request, username, start, end):
 
         post_likes = []
         for post in posts:
+            isLiked = False
+            if len(Like.objects.filter(user=request.user, post=post)) > 0:
+                isLiked = True
             post_likes.append({ 
                 "post": {
                     "username": post.user.username,
@@ -141,7 +173,8 @@ def getPostsProfile(request, username, start, end):
                     "date": str(post.date),
                     "id": str(post.id)
                 }, 
-                "likes": str(len(Like.objects.filter(post=post)))
+                "likes": str(len(Like.objects.filter(post=post))),
+                "isLiked": isLiked
             })
         return JsonResponse({ 
             "post_likes": post_likes,
@@ -212,21 +245,6 @@ def unfollow(request):
     else:
         return HttpResponse("Not found...")
 
-def like(request):
-    if request.method == "PUT":
-        l = Like(userFrom=User.objects.filter(username=request.PUT["userFrom"])[0], userTo=User.objects.filter(username=request.PUT["userTo"])[0])
-        l.save()
-        return HttpResponse("Success")
-    else:
-        return HttpResponse("Not found")
-
-def unlike(request):
-    if request.method == "PUT":
-        l = Like.objects.get(userFrom=User.objects.filter(username=request.PUT["userFrom"])[0], userTo=User.objects.filter(username=request.PUT["userTo"])[0])
-        l.delete()
-        return HttpResponse("Success")
-    else:
-        return HttpResponse("Not found")
 
 def profile(request, username):
     user = User.objects.filter(username=username)[0]
